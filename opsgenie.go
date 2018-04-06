@@ -1,4 +1,4 @@
-// Package ospgenie provides basic heartbeat support.
+// Package opsgenie provides basic heartbeat support.
 //
 // Example usage:
 //    heartbeat := opsgenie.Heartbeat{
