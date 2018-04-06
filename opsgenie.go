@@ -92,6 +92,7 @@ type Heartbeat struct {
 	quit chan int
 }
 
+// Start sending heartbeat request.
 func (h *Heartbeat) Start() error {
 	if len(h.ApiKey) == 0 {
 		return errors.New("Please provide OpsGenie apikey")
