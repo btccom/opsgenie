@@ -4,8 +4,8 @@
 //    heartbeat := opsgenie.Heartbeat{
 // 	      ApiKey:   "your-api-key-with-configuration-access",
 // 	      PingName: "service-name",
-// 	      TeamName: "ops_team",
-// 	      Interval: 2,
+// 	      TeamName: "ops_team", // Optional. ops_team will be used by default.
+// 	      Interval: 2, // Optional. 60 seconds by default.
 //    }
 //    err = heartbeat.Start()
 //    if err != nil {
