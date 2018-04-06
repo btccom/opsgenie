@@ -99,7 +99,7 @@ func (h *Heartbeat) Start() error {
 	if len(h.TeamName) == 0 {
 		h.TeamName = "ops_team"
 	}
-	if h.Interval <= 1 {
+	if h.Interval < 1 {
 		h.Interval = 60
 	}
 	createHeartbeart(h)
