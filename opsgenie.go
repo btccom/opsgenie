@@ -2,8 +2,6 @@
 //
 // Example usage:
 //    heartbeat := opsgenie.Heartbeat{
-// 	      ApiKey:   "your-api-key-with-configuration-access",
-// 	      PingName: "service-name",
 // 	      TeamName: "ops_team", // Optional. ops_team will be used by default.
 // 	      Interval: 2, // Optional. 60 seconds by default.
 //    }
@@ -24,7 +22,17 @@ import (
 	"time"
 )
 
-const apiUrl = "https://api.opsgenie.com/v2/heartbeats/"
+const apiUrl = "https://api.opsgenie.com/v2"
+
+var (
+	apiKey  string
+	appName string
+)
+
+func Configure(uApiKey, uAppName string) {
+	apiKey = fmt.Sprintf("GenieKey %s", uApiKey)
+	appName = uAppName
+}
 
 type newPing struct {
 	Name         string `json:"name"`
@@ -38,9 +46,22 @@ type newPing struct {
 	} `json:"ownerTeam"`
 }
 
+type Heartbeat struct {
+	TeamName string        // Team name to assign. Should exists.
+	Interval time.Duration // Interval in seconds to perform heartbeat requests
+
+	quit chan int
+}
+
+type alert struct {
+	Message     string `json:"message"`
+	Description string `json:"description"`
+	Entity      string `json:"entity"`
+	Priority    string `json:"priority"`
+}
+
 func sendHeartbeat(h *Heartbeat) {
-	apiKey := fmt.Sprintf("GenieKey %s", h.ApiKey)
-	url := fmt.Sprintf("%s/%s/ping", apiUrl, h.PingName)
+	url := fmt.Sprintf("%s/heartbeats/%s/ping", apiUrl, appName)
 
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
@@ -55,7 +76,7 @@ func sendHeartbeat(h *Heartbeat) {
 
 func createHeartbeart(h *Heartbeat) {
 	newPing := newPing{
-		Name:         h.PingName,
+		Name:         appName,
 		Description:  "",
 		IntervalUnit: "minutes",
 		Interval:     5,
@@ -68,10 +89,9 @@ func createHeartbeart(h *Heartbeat) {
 	}
 	body, _ := json.Marshal(newPing)
 
-	apiKey := fmt.Sprintf("GenieKey %s", h.ApiKey)
-
+	url := fmt.Sprintf("%s/heartbeats", apiUrl)
 	client := &http.Client{}
-	req, _ := http.NewRequest("POST", apiUrl, bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	req.Header.Add("Authorization", apiKey)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -83,18 +103,33 @@ func createHeartbeart(h *Heartbeat) {
 	}
 }
 
-type Heartbeat struct {
-	ApiKey   string
-	PingName string
-	TeamName string        // Team name to assign. Should exists.
-	Interval time.Duration // Interval in seconds to perform heartbeat requests
+func ReportError(uerr error, stack []byte) {
+	alert := alert{
+		Message:     uerr.Error(),
+		Description: fmt.Sprintf("%s", stack),
+		Entity:      appName,
+		Priority:    "P1",
+	}
 
-	quit chan int
+	body, _ := json.Marshal(alert)
+
+	url := fmt.Sprintf("%s/alerts", apiUrl)
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req.Header.Add("Authorization", apiKey)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending alert")
+	} else {
+		resp.Body.Close()
+	}
 }
 
 // Start sending heartbeat request.
 func (h *Heartbeat) Start() error {
-	if len(h.ApiKey) == 0 {
+	if len(apiKey) == 0 {
 		return errors.New("Please provide OpsGenie apikey")
 	}
 	if len(h.TeamName) == 0 {
