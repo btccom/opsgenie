@@ -68,7 +68,7 @@ func sendHeartbeat(h *Heartbeat) {
 	req.Header.Add("Authorization", apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error sending heartbeat request")
+		fmt.Printf("Error sending heartbeat request: %s\n", err.Error())
 	} else {
 		resp.Body.Close()
 	}
